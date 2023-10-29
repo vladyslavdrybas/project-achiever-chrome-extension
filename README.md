@@ -1,3 +1,6 @@
+# Redundant as web service-worker in use
+this project still under development
+
 ## Motivator Chrome extension
 Receives notifications from API and displays them by schedule.
 
