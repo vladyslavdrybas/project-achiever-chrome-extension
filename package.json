@@ -9,9 +9,9 @@
   "keywords": [],
   "author": "Vladyslav Drybas",
   "dependencies": {
-    "firebase": "^10.5.2"
   },
   "devDependencies": {
+    "firebase": "^10.5.2",
     "@types/chrome": "^0.0.248",
     "copy-webpack-plugin": "^11.0.0",
     "ts-loader": "^9.5.0",

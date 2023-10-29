@@ -1,6 +1,6 @@
 {
   "name": "Motivator",
-  "version": "0.0.9",
+  "version": "0.0.14",
   "manifest_version": 3,
   "author": "Vladyslav Drybas (https://www.linkedin.com/in/vladyslavdrybas/)",
   "description": "Receives and Display notifications from Motivator API. User should schedule notifications on website.",
@@ -16,7 +16,7 @@
     "notifications"
   ],
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "firebase-messaging-sw.js"
   },
   "minimum_chrome_version": "90"
 }
