@@ -2,9 +2,7 @@
 Receives notifications from API and displays them by schedule.
 
 ### UI
-Has login form to subscribe.
-
-Has logout form to stop notifications
+Extension does not have user interface. Main purpose is to show notifications from the motivator api.
 
 ### References
 * Chrome extension manifest [documentation](https://developer.chrome.com/docs/extensions/mv3/manifest/)
