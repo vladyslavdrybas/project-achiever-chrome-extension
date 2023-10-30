@@ -4,6 +4,7 @@ module.exports = {
   mode: "production",
   entry: {
     "firebase-messaging-sw": path.resolve(__dirname, "..", "src", "background.ts"),
+    "assets/js/signin": path.resolve(__dirname, "..", "src", "auth", "signin.ts"),
   },
   output: {
     path: path.join(__dirname, "../dist"),

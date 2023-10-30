@@ -1,9 +1,10 @@
 import { getMessaging, onBackgroundMessage } from "firebase/messaging/sw"; // note: we MUST use the sw version of the messaging API and NOT the one from "firebase/messaging"
-import { getToken, isSupported } from "firebase/messaging";
+import { getToken } from "firebase/messaging";
 import { initializeApp } from "firebase/app";
+import { StorageKeys } from "./types/StorageKeys";
+import LoginRequest from "./api/requests/LoginRequest";
+import FcmTokenRegister from "./api/requests/FcmTokenRegister";
 
-const NEXT_PUBLIC_HOST_ROUTE="https://8bab-89-209-64-155.ngrok-free.app/api/firebase/fake/store/token/{{token}}/web_ext/{{user}}"
-const USER_ID= '5440a081-1e50-41e8-8d62-4e06fc51a69c';
 const VAPID_KEY = "BG9ZzgwoZHtOmt7g2VBIQJHASK9VEAup7q7IS2q0XRCM6L75_ahO2kFW8zPwBRjqfBPNzOnI1TwbWCcvZ8nGhxw";
 
 const firebaseConfig = {
@@ -18,56 +19,62 @@ const firebaseConfig = {
 const firebase = initializeApp(firebaseConfig);
 const messaging = getMessaging(firebase);
 
-const requestToken = async () => {
+onBackgroundMessage(messaging, (payload) => {
+  console.log('[EXTENSION firebase-messaging-sw.js] Received background message ', payload);
+  // Customize notification here
+  const title = payload?.data?.title ?? null;
+  const body = payload?.data?.body ?? null;
+  const requireInteraction = payload?.data?.requireInteraction ?? 'true';
+
+  if (null === title
+    || null === body
+  ) {
+    return;
+  }
+
+  const notificationTitle = title;
+  const notificationOptions = {
+    body: body,
+    requireInteraction: requireInteraction,
+  };
+
+  self.registration.showNotification(notificationTitle,notificationOptions);
+});
+
+const refreshFcmToken = async () => {
   let token = await getToken(messaging, {
     vapidKey: VAPID_KEY,
     serviceWorkerRegistration: self.registration, // note: we use the sw of ourself to register with
   });
 
   if (token) {
+    console.log(`fcm device token received: ${token}`);
     token = btoa(token);
-    let route = NEXT_PUBLIC_HOST_ROUTE.replace('{{token}}', token);
-    route = route.replace('{{user}}', USER_ID);
-    const headers = {
-      "Content-Type": "application/json",
-      "Access-Control-Allow-Origin": "*",
-      "ngrok-skip-browser-warning": "69420",
-    }
-    const init: any = {
-      method: "GET",
-      headers: headers,
-    };
-    console.log({
-      source: 'extension',
-      requestRoute: route,
-      requestMethod: init.method,
-      requestHeaders: init.headers,
-    });
-    const response = await fetch(route, init);
-    console.log({
-      source: 'extension',
-      response: await response.json(),
-    });
+    console.log(`fcm device token encoded: ${token}`);
+
+    const request = new FcmTokenRegister(token);
+    await request.send();
+  } else {
+    console.log(`fcm device token not received`);
   }
-  console.log(`fcm device token received: ${token}`);
-  // Now pass this token to your server and use it to send push notifications to this user
 }
 
-const onEnabledHandler = async () => {
-  console.log("enable extension");
-  requestToken();
-}
+chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
+  if (request.message === 'email_password_authentication') {
+    const email = request.payload.email;
+    const password = request.payload.password;
+    const apiRequest = new LoginRequest(email, password);
 
-chrome.management.onEnabled.addListener(onEnabledHandler);
+    await apiRequest.send();
 
-onBackgroundMessage(messaging, (payload) => {
-  console.log('[EXTENSION firebase-messaging-sw.js] Received background message ', payload);
-  // Customize notification here
-  const notificationTitle = payload?.data?.title ?? 'Background Message Title';
-  const notificationOptions = {
-    body: payload?.data?.body,
-    requireInteraction: payload?.data?.requireInteraction,
-  };
+    const storedAccessToken = (await chrome.storage.local.get([StorageKeys.ACCESS_TOKEN]))[StorageKeys.ACCESS_TOKEN];
+    const storedRefreshToken = (await chrome.storage.local.get([StorageKeys.REFRESH_TOKEN]))[StorageKeys.REFRESH_TOKEN];
+    const storedUserId = (await chrome.storage.local.get([StorageKeys.LOGGED_USER_ID]))[StorageKeys.LOGGED_USER_ID];
 
-  self.registration.showNotification(notificationTitle,notificationOptions);
+    console.log({storedAccessToken, storedRefreshToken, storedUserId});
+
+    await refreshFcmToken();
+  }
+
+  return true;
 });

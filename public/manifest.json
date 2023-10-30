@@ -1,6 +1,6 @@
 {
   "name": "Motivator",
-  "version": "0.0.17",
+  "version": "0.0.28",
   "manifest_version": 3,
   "author": "Vladyslav Drybas (https://www.linkedin.com/in/vladyslavdrybas/)",
   "description": "Receives and Display notifications from Motivator API. User should schedule notifications on website.",
@@ -8,9 +8,11 @@
     "48": "/assets/icons/logo.png",
     "128": "/assets/icons/logo.png"
   },
-  "action": {},
+  "action": {
+    "default_popup": "popup_signin.html"
+  },
   "permissions": [
-    "activeTab",
+    "storage",
     "scripting",
     "management",
     "notifications"
