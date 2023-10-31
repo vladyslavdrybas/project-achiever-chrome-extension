@@ -20,8 +20,19 @@ const firebaseConfig = {
 const firebase = initializeApp(firebaseConfig);
 const messaging = getMessaging(firebase);
 
-onBackgroundMessage(messaging, (payload) => {
+onBackgroundMessage(messaging, async (payload) => {
   console.log('[EXTENSION firebase-messaging-sw.js] Received background message ', payload);
+  const storedUserId = (await chrome.storage.local.get([StorageKeys.LOGGED_USER_ID]))[StorageKeys.LOGGED_USER_ID];
+
+  if (null === storedUserId
+    || null === (payload?.data?.userId ?? null)
+    || storedUserId !== payload?.data?.userId
+  ) {
+    console.log('EXTENSION got message for not logged in user.');
+
+    return;
+  }
+
   // Customize notification here
   const title = payload?.data?.title ?? null;
   const body = payload?.data?.body ?? null;
