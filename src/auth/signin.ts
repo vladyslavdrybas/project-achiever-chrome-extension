@@ -10,11 +10,14 @@ const addSignInSubmitEvent = () => {
 
     if (email && password) {
       chrome.runtime.sendMessage({
-        message: 'email_password_authentication',
+        message: 'authentication_email_password',
         payload: {email, password},
         function (response: any) {
-          if (response === 'success') {
-            document.querySelector('#response')!.innerHTML = response;
+          console.log(response);
+          alert(response);
+          if (response.satus === 200) {
+            document.querySelector('#response')!.innerHTML = response.status.toString();
+            window.location.replace('./popup_signout.html');
           }
         }
       })

@@ -4,6 +4,7 @@ import { initializeApp } from "firebase/app";
 import { StorageKeys } from "./types/StorageKeys";
 import LoginRequest from "./api/requests/LoginRequest";
 import FcmTokenRegister from "./api/requests/FcmTokenRegister";
+import LogoutRequest from "./api/requests/LogoutRequest";
 
 const VAPID_KEY = "BG9ZzgwoZHtOmt7g2VBIQJHASK9VEAup7q7IS2q0XRCM6L75_ahO2kFW8zPwBRjqfBPNzOnI1TwbWCcvZ8nGhxw";
 
@@ -60,7 +61,7 @@ const refreshFcmToken = async () => {
 }
 
 chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
-  if (request.message === 'email_password_authentication') {
+  if (request.message === 'authentication_email_password') {
     const email = request.payload.email;
     const password = request.payload.password;
     const apiRequest = new LoginRequest(email, password);
@@ -74,6 +75,24 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
     console.log({storedAccessToken, storedRefreshToken, storedUserId});
 
     await refreshFcmToken();
+
+    await chrome.action.setPopup({popup: './popup_signout.html'});
+
+    sendResponse({status: 200});
+  } else if (request.message === 'authentication_signout') {
+    const apiRequest = new LogoutRequest();
+
+    await apiRequest.send();
+
+    const storedAccessToken = (await chrome.storage.local.get([StorageKeys.ACCESS_TOKEN]))[StorageKeys.ACCESS_TOKEN];
+    const storedRefreshToken = (await chrome.storage.local.get([StorageKeys.REFRESH_TOKEN]))[StorageKeys.REFRESH_TOKEN];
+    const storedUserId = (await chrome.storage.local.get([StorageKeys.LOGGED_USER_ID]))[StorageKeys.LOGGED_USER_ID];
+
+    console.log({storedAccessToken, storedRefreshToken, storedUserId});
+
+    await chrome.action.setPopup({popup: './popup_signin.html'});
+
+    sendResponse({status: 200});
   }
 
   return true;
