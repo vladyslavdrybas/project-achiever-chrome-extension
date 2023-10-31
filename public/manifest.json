@@ -1,24 +1,24 @@
 {
   "name": "Motivator",
-  "version": "0.0.40",
+  "version": "0.0.51",
   "manifest_version": 3,
-  "author": "Vladyslav Drybas (https://www.linkedin.com/in/vladyslavdrybas/)",
+  "author": "Vladyslav Drybas (https://www.linkedin.com/in/vladyslavdrybas)",
   "description": "Receives and Display notifications from Motivator API. User should schedule notifications on website.",
-  "icons": {
+  "icons" : {
     "48": "/assets/icons/logo.png",
     "128": "/assets/icons/logo.png"
   },
   "action": {
-    "default_popup": "popup_signin.html"
+    "default_title": "Motivator Auth",
+    "default_popup": "signin.html"
   },
   "permissions": [
     "storage",
-    "scripting",
     "management",
     "notifications"
   ],
   "background": {
-    "service_worker": "firebase-messaging-sw.js"
+    "service_worker": "background.js"
   },
   "minimum_chrome_version": "90"
 }

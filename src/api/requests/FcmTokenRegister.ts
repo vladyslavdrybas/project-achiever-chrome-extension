@@ -1,8 +1,13 @@
 import {GetRequest} from "../ApiRequest";
 import {Routes} from "../../artifacts/Route";
+import {StorageKeys} from "../../types/StorageKeys";
 
 type TFcmTokenRegisterResponse = {
-    message: string;
+    deviceType: string;
+    user: {
+      id: string;
+    };
+    expireAt: string;
 }
 
 class FcmTokenRegister {
@@ -31,6 +36,10 @@ class FcmTokenRegister {
         await request.sendWithAuthorization();
 
         this._response = request.response;
+
+      const tokenExpireObj: any = {};
+      tokenExpireObj[StorageKeys.FCM_TOKEN_EXPIRE_AT_UTC] = this._response?.expireAt ?? null;
+      await chrome.storage.local.set(tokenExpireObj);
     }
 }
 

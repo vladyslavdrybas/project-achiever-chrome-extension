@@ -4,15 +4,15 @@ const addLogoutEvent = () => {
       message: 'authentication_signout',
       function (response: any) {
         console.log(response);
-        alert(response);
         if (response.status === 200) {
           document.querySelector('#response')!.innerHTML = response.status.toString();
-          window.location.replace('./popup_signin.html');
+          window.location.replace('./signin.html');
         }
       }
     })
   });
 }
 
-addLogoutEvent();
-
+document.addEventListener('DOMContentLoaded', function () {
+  addLogoutEvent();
+}, false)

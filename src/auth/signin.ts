@@ -14,10 +14,9 @@ const addSignInSubmitEvent = () => {
         payload: {email, password},
         function (response: any) {
           console.log(response);
-          alert(response);
           if (response.satus === 200) {
             document.querySelector('#response')!.innerHTML = response.status.toString();
-            window.location.replace('./popup_signout.html');
+            window.location.replace('./signout.html');
           }
         }
       })
@@ -28,5 +27,6 @@ const addSignInSubmitEvent = () => {
   });
 }
 
-addSignInSubmitEvent();
-
+document.addEventListener('DOMContentLoaded', function () {
+  addSignInSubmitEvent();
+}, false)

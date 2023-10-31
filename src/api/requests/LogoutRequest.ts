@@ -1,4 +1,4 @@
-import {GetRequest} from "../ApiRequest";
+import {ApiRequestError, ApiRequestStatus, PostRequest} from "../ApiRequest";
 import {StorageKeys} from "../../types/StorageKeys";
 import {Routes} from "../../artifacts/Route";
 
@@ -24,12 +24,37 @@ class LogoutRequest {
     }
 
     send = async (): Promise<void> => {
-        const request = new GetRequest(this._route);
+      const refreshToken = (await chrome.storage.local.get([StorageKeys.REFRESH_TOKEN]))[StorageKeys.REFRESH_TOKEN] ?? null;
 
-        await request.send();
+      console.log(refreshToken);
+      if (null === refreshToken) {
         await chrome.storage.local.remove([StorageKeys.LOGGED_USER_ID, StorageKeys.ACCESS_TOKEN, StorageKeys.REFRESH_TOKEN]);
 
-        this._response = request.response;
+        throw new ApiRequestError(
+          {
+            message: "Refreshing. Refresh token is not set.",
+            status: ApiRequestStatus.HTTP_UNAUTHORIZED,
+            route: this._route,
+          }
+        )
+      }
+
+      const request = new PostRequest(
+        this._route,
+        JSON.stringify({
+          "refresh_token": refreshToken,
+        })
+      );
+
+      await request.send();
+      await chrome.storage.local.remove([
+        StorageKeys.LOGGED_USER_ID,
+        StorageKeys.ACCESS_TOKEN,
+        StorageKeys.REFRESH_TOKEN,
+        StorageKeys.FCM_TOKEN_EXPIRE_AT_UTC,
+      ]);
+
+      this._response = request.response;
     }
 }
 

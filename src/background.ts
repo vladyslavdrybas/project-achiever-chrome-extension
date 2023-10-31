@@ -71,12 +71,13 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
     const storedAccessToken = (await chrome.storage.local.get([StorageKeys.ACCESS_TOKEN]))[StorageKeys.ACCESS_TOKEN];
     const storedRefreshToken = (await chrome.storage.local.get([StorageKeys.REFRESH_TOKEN]))[StorageKeys.REFRESH_TOKEN];
     const storedUserId = (await chrome.storage.local.get([StorageKeys.LOGGED_USER_ID]))[StorageKeys.LOGGED_USER_ID];
+    const storedFcmTokenExpireAt = (await chrome.storage.local.get([StorageKeys.FCM_TOKEN_EXPIRE_AT_UTC]))[StorageKeys.FCM_TOKEN_EXPIRE_AT_UTC];
 
-    console.log({storedAccessToken, storedRefreshToken, storedUserId});
+    console.log({storedAccessToken, storedRefreshToken, storedUserId, storedFcmTokenExpireAt});
 
     await refreshFcmToken();
 
-    await chrome.action.setPopup({popup: './popup_signout.html'});
+    await chrome.action.setPopup({popup: './signout.html'});
 
     sendResponse({status: 200});
   } else if (request.message === 'authentication_signout') {
@@ -87,10 +88,11 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
     const storedAccessToken = (await chrome.storage.local.get([StorageKeys.ACCESS_TOKEN]))[StorageKeys.ACCESS_TOKEN];
     const storedRefreshToken = (await chrome.storage.local.get([StorageKeys.REFRESH_TOKEN]))[StorageKeys.REFRESH_TOKEN];
     const storedUserId = (await chrome.storage.local.get([StorageKeys.LOGGED_USER_ID]))[StorageKeys.LOGGED_USER_ID];
+    const storedFcmTokenExpireAt = (await chrome.storage.local.get([StorageKeys.FCM_TOKEN_EXPIRE_AT_UTC]))[StorageKeys.FCM_TOKEN_EXPIRE_AT_UTC];
 
-    console.log({storedAccessToken, storedRefreshToken, storedUserId});
+    console.log({storedAccessToken, storedRefreshToken, storedUserId, storedFcmTokenExpireAt});
 
-    await chrome.action.setPopup({popup: './popup_signin.html'});
+    await chrome.action.setPopup({popup: './signin.html'});
 
     sendResponse({status: 200});
   }
