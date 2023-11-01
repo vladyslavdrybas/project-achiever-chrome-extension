@@ -216,7 +216,7 @@ class ApiRequest {
             this._response = await response.json();
 
             console.log({
-                type: 'not json response',
+                type: 'json response',
                 status: response.status,
                 body: this._response,
                 responseHeaders: response.headers,

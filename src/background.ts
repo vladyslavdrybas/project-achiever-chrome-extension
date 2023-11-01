@@ -21,7 +21,30 @@ const firebaseConfig = {
 const firebase = initializeApp(firebaseConfig);
 const messaging = getMessaging(firebase);
 
-console.log(self);
+const logStorageData = async () => {
+  const storedAccessToken = (await chrome.storage.local.get([StorageKeys.ACCESS_TOKEN]))[StorageKeys.ACCESS_TOKEN];
+  const storedRefreshToken = (await chrome.storage.local.get([StorageKeys.REFRESH_TOKEN]))[StorageKeys.REFRESH_TOKEN];
+  const storedUserId = (await chrome.storage.local.get([StorageKeys.LOGGED_USER_ID]))[StorageKeys.LOGGED_USER_ID];
+  const storedFcmTokenExpireAt = (await chrome.storage.local.get([StorageKeys.FCM_TOKEN_EXPIRE_AT_UTC]))[StorageKeys.FCM_TOKEN_EXPIRE_AT_UTC];
+
+  console.log({
+    storedAccessToken,
+    storedRefreshToken,
+    storedUserId,
+    storedFcmTokenExpireAt
+  });
+}
+
+const cleanStorageData = async () => {
+  await chrome.storage.local.remove([
+    StorageKeys.LOGGED_USER_ID,
+    StorageKeys.ACCESS_TOKEN,
+    StorageKeys.REFRESH_TOKEN,
+    StorageKeys.FCM_TOKEN_EXPIRE_AT_UTC,
+  ]);
+
+  await logStorageData();
+}
 
 self.addEventListener(
   "notificationclick",
@@ -53,18 +76,17 @@ onBackgroundMessage(messaging, async (payload) => {
     return;
   }
 
-  // Customize notification here
   let title = payload?.data?.title ?? null;
   const body = payload?.data?.body ?? null;
-  const doneAt = payload?.data?.doneAt ?? '';
-  const requireInteraction = payload?.data?.requireInteraction ?? 'true';
 
-  if (null === title
-    || null === body
-  ) {
+  if (null === title || null === body) {
     return;
   }
 
+  const doneAt = payload?.data?.doneAt ?? '';
+  const requireInteraction = payload?.data?.requireInteraction ?? 'true';
+
+  // Customize notification here
   const actions: NotificationAction[] = [
     {
       action: 'watch_details',
@@ -114,51 +136,51 @@ const refreshFcmToken = async () => {
   }
 }
 
-chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
+const sendLoginRequest = async (email: string, password: string) => {
+  const apiRequest = new LoginRequest(email, password);
+
+  try {
+    await apiRequest.send();
+  } catch (e) {
+    console.log(e);
+    return 400;
+  }
+
+  await logStorageData();
+  await refreshFcmToken();
+
+  await chrome.action.setPopup({popup: './signout.html'});
+
+  return 200;
+}
+
+const sendLogoutRequest = async () => {
+  const apiRequest = new LogoutRequest();
+
+  try {
+    await apiRequest.send();
+    await logStorageData();
+  } catch (e) {
+    console.log(e);
+    await cleanStorageData();
+  }
+
+  await chrome.action.setPopup({popup: './signin.html'});
+
+  return 200;
+}
+
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.message === 'authentication_email_password') {
     const email = request.payload.email;
     const password = request.payload.password;
-    const apiRequest = new LoginRequest(email, password);
-
-    await apiRequest.send();
-
-    const storedAccessToken = (await chrome.storage.local.get([StorageKeys.ACCESS_TOKEN]))[StorageKeys.ACCESS_TOKEN];
-    const storedRefreshToken = (await chrome.storage.local.get([StorageKeys.REFRESH_TOKEN]))[StorageKeys.REFRESH_TOKEN];
-    const storedUserId = (await chrome.storage.local.get([StorageKeys.LOGGED_USER_ID]))[StorageKeys.LOGGED_USER_ID];
-    const storedFcmTokenExpireAt = (await chrome.storage.local.get([StorageKeys.FCM_TOKEN_EXPIRE_AT_UTC]))[StorageKeys.FCM_TOKEN_EXPIRE_AT_UTC];
-
-    console.log({storedAccessToken, storedRefreshToken, storedUserId, storedFcmTokenExpireAt});
-
-    await refreshFcmToken();
-
-    await chrome.action.setPopup({popup: './signout.html'});
-
-    sendResponse({status: 200});
+    sendLoginRequest(email, password).then(r =>
+      sendResponse({status: r})
+    );
   } else if (request.message === 'authentication_signout') {
-    const apiRequest = new LogoutRequest();
-
-    try {
-      await apiRequest.send();
-    } catch (e) {
-      console.log(e);
-      await chrome.storage.local.remove([
-        StorageKeys.LOGGED_USER_ID,
-        StorageKeys.ACCESS_TOKEN,
-        StorageKeys.REFRESH_TOKEN,
-        StorageKeys.FCM_TOKEN_EXPIRE_AT_UTC,
-      ]);
-    }
-
-    const storedAccessToken = (await chrome.storage.local.get([StorageKeys.ACCESS_TOKEN]))[StorageKeys.ACCESS_TOKEN];
-    const storedRefreshToken = (await chrome.storage.local.get([StorageKeys.REFRESH_TOKEN]))[StorageKeys.REFRESH_TOKEN];
-    const storedUserId = (await chrome.storage.local.get([StorageKeys.LOGGED_USER_ID]))[StorageKeys.LOGGED_USER_ID];
-    const storedFcmTokenExpireAt = (await chrome.storage.local.get([StorageKeys.FCM_TOKEN_EXPIRE_AT_UTC]))[StorageKeys.FCM_TOKEN_EXPIRE_AT_UTC];
-
-    console.log({storedAccessToken, storedRefreshToken, storedUserId, storedFcmTokenExpireAt});
-
-    await chrome.action.setPopup({popup: './signin.html'});
-
-    sendResponse({status: 200});
+    sendLogoutRequest().then(r =>
+      sendResponse({status: r})
+    );
   }
 
   return true;

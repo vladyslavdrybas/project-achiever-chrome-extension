@@ -1,4 +1,3 @@
-export {};
 
 declare global {
   interface Window {
@@ -10,4 +9,12 @@ declare global {
     notification: any;
     action: string;
   }
+  interface BackgroundResponse extends Object {
+    status: number;
+  }
 }
+
+export {
+  BackgroundResponse
+};
+
