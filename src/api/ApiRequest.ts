@@ -216,6 +216,7 @@ class ApiRequest {
             this._response = await response.json();
 
             console.log({
+                type: 'not json response',
                 status: response.status,
                 body: this._response,
                 responseHeaders: response.headers,
@@ -227,6 +228,7 @@ class ApiRequest {
 
         if (!this.isStatusOk()) {
             console.log({
+                type: 'status not ok',
                 status: response.status,
                 body: response.body,
                 responseHeaders: response.headers,

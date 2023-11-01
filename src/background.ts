@@ -5,6 +5,7 @@ import { StorageKeys } from "./types/StorageKeys";
 import LoginRequest from "./api/requests/LoginRequest";
 import FcmTokenRegister from "./api/requests/FcmTokenRegister";
 import LogoutRequest from "./api/requests/LogoutRequest";
+import DateW3c from "./util/DateW3c";
 
 const VAPID_KEY = "BG9ZzgwoZHtOmt7g2VBIQJHASK9VEAup7q7IS2q0XRCM6L75_ahO2kFW8zPwBRjqfBPNzOnI1TwbWCcvZ8nGhxw";
 
@@ -20,6 +21,25 @@ const firebaseConfig = {
 const firebase = initializeApp(firebaseConfig);
 const messaging = getMessaging(firebase);
 
+console.log(self);
+
+self.addEventListener(
+  "notificationclick",
+  (event) => {
+    event.notification.close();
+    if (event.action === "watch_details") {
+      // User selected the Archive action.
+      console.log('Notification "watch_details" processing');
+    } else if (event.action === "close") {
+      console.log('Notification "watch_details" processing. Do nothing.');
+    } else {
+      // User selected (e.g., clicked in) the main body of notification.
+      console.log('Notification action not found');
+    }
+  },
+  false,
+);
+
 onBackgroundMessage(messaging, async (payload) => {
   console.log('[EXTENSION firebase-messaging-sw.js] Received background message ', payload);
   const storedUserId = (await chrome.storage.local.get([StorageKeys.LOGGED_USER_ID]))[StorageKeys.LOGGED_USER_ID];
@@ -34,8 +54,9 @@ onBackgroundMessage(messaging, async (payload) => {
   }
 
   // Customize notification here
-  const title = payload?.data?.title ?? null;
+  let title = payload?.data?.title ?? null;
   const body = payload?.data?.body ?? null;
+  const doneAt = payload?.data?.doneAt ?? '';
   const requireInteraction = payload?.data?.requireInteraction ?? 'true';
 
   if (null === title
@@ -44,13 +65,35 @@ onBackgroundMessage(messaging, async (payload) => {
     return;
   }
 
-  const notificationTitle = title;
-  const notificationOptions = {
+  const actions: NotificationAction[] = [
+    {
+      action: 'watch_details',
+      title: 'Details',
+    },
+    {
+      action: 'close',
+      title: 'Close',
+    }
+  ];
+
+  const options: NotificationOptions = {
     body: body,
-    requireInteraction: requireInteraction,
+    requireInteraction: requireInteraction === 'true',
+    silent: true,
+    icon: payload?.data?.icon ?? 'assets/icons/logo.png',
+    actions: actions,
   };
 
-  self.registration.showNotification(notificationTitle,notificationOptions);
+  if ('' !== doneAt) {
+    const time = new DateW3c(doneAt);
+    title += ' ' + time.toUserView();
+  }
+
+  await self.registration.showNotification(title, options);
+
+  chrome.notifications.getAll((notification) => {
+    console.log(notification);
+  });
 });
 
 const refreshFcmToken = async () => {
@@ -94,7 +137,17 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
   } else if (request.message === 'authentication_signout') {
     const apiRequest = new LogoutRequest();
 
-    await apiRequest.send();
+    try {
+      await apiRequest.send();
+    } catch (e) {
+      console.log(e);
+      await chrome.storage.local.remove([
+        StorageKeys.LOGGED_USER_ID,
+        StorageKeys.ACCESS_TOKEN,
+        StorageKeys.REFRESH_TOKEN,
+        StorageKeys.FCM_TOKEN_EXPIRE_AT_UTC,
+      ]);
+    }
 
     const storedAccessToken = (await chrome.storage.local.get([StorageKeys.ACCESS_TOKEN]))[StorageKeys.ACCESS_TOKEN];
     const storedRefreshToken = (await chrome.storage.local.get([StorageKeys.REFRESH_TOKEN]))[StorageKeys.REFRESH_TOKEN];
