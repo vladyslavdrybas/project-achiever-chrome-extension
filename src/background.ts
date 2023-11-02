@@ -87,8 +87,12 @@ self.addEventListener(
     console.log('notificationclick');
     console.log(event);
     const notification = event?.notification ?? null;
+    if (!notification) return;
+
+    saveAnalytics(event);
     const payload = notification?.data ?? null;
     notification.data.closeOnAction = event.action;
+
     switch (event.action) {
       case "watch_details":
         console.log('Notification "watch_details" processing');
@@ -100,12 +104,15 @@ self.addEventListener(
         event.notification.close();
         break;
       default:
+        if (!notification.data.closeOnAction) {
+          notification.data.closeOnAction = 'unknown';
+        }
         console.log('Notification action default');
+        const closeDuration = payload?.duration ?? 3000;
         setTimeout(() => {
           notification.close();
-        }, 5000);
+        }, closeDuration);
     }
-    saveAnalytics(event);
   },
   false,
 );
