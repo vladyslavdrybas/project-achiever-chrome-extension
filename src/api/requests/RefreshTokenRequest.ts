@@ -16,7 +16,7 @@ class RefreshTokenRequest {
 
     constructor() {
         this._host = Routes.host;
-        this._route = Routes.profile;
+        this._route = Routes.refreshAccessToken;
         this._route = this._host + this._route;
         this._response = null;
     }

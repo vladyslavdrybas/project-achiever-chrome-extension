@@ -7,6 +7,7 @@ type TRoutes = {
   profile: string;
   fcmTokenRegister: string;
   fcmTokenProlong: string;
+  analyticsTrackNotification: string;
 }
 
 export const Routes: TRoutes = {
@@ -18,4 +19,5 @@ export const Routes: TRoutes = {
   profile: "/api/profile",
   fcmTokenRegister: "/api/firebase/store/token/{{token}}/web_ext",
   fcmTokenProlong: "/api/firebase/prolong/token/web_ext",
+  analyticsTrackNotification: "/api/analytics/track/notification",
 }

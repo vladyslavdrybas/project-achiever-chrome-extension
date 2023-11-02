@@ -46,7 +46,7 @@ class LogoutRequest {
         })
       );
 
-      await request.send();
+      await request.sendWithAuthorization();
       await chrome.storage.local.remove([
         StorageKeys.LOGGED_USER_ID,
         StorageKeys.ACCESS_TOKEN,

@@ -6,6 +6,7 @@ import LoginRequest from "./api/requests/LoginRequest";
 import FcmTokenRegister from "./api/requests/FcmTokenRegister";
 import LogoutRequest from "./api/requests/LogoutRequest";
 import DateW3c from "./util/DateW3c";
+import AnalyticsTrackNotificationRequest from "./api/requests/AnalyticsTrackNotificationRequest";
 
 const VAPID_KEY = "BG9ZzgwoZHtOmt7g2VBIQJHASK9VEAup7q7IS2q0XRCM6L75_ahO2kFW8zPwBRjqfBPNzOnI1TwbWCcvZ8nGhxw";
 
@@ -46,22 +47,79 @@ const cleanStorageData = async () => {
   await logStorageData();
 }
 
+const openDetailsLink = (link: string|null) => {
+  if (link) {
+    chrome.tabs.create({ url: link });
+  }
+}
+
+const saveAnalytics = (event: Event) => {
+  const notification = event?.notification ?? null;
+  if (!notification) {
+    return;
+  }
+
+  const payload = notification?.data ?? null;
+
+  const data = payload;
+  payload['icon'] = notification.icon;
+  payload['title'] = notification.title;
+  payload['body'] = notification.body;
+  payload['timestamp'] = notification.timestamp;
+  payload['closedAt'] = (new DateW3c()).getTime();
+  if (payload) {
+    payload['requireInteraction'] = payload.requireInteraction ?? null;
+    payload['silent'] = payload.silent ?? null;
+    payload['lang'] = payload.lang ?? null;
+    payload['doneAt'] = payload.doneAt ?? null;
+    payload['link'] = payload.link ?? null;
+    payload['closeOnAction'] = payload.closeOnAction ?? null;
+  }
+
+  const apiRequest = new AnalyticsTrackNotificationRequest(data);
+
+  apiRequest.send();
+}
+
 self.addEventListener(
   "notificationclick",
   (event) => {
-    event.notification.close();
-    if (event.action === "watch_details") {
-      // User selected the Archive action.
-      console.log('Notification "watch_details" processing');
-    } else if (event.action === "close") {
-      console.log('Notification "watch_details" processing. Do nothing.');
-    } else {
-      // User selected (e.g., clicked in) the main body of notification.
-      console.log('Notification action not found');
+    console.log('notificationclick');
+    console.log(event);
+    const notification = event?.notification ?? null;
+    const payload = notification?.data ?? null;
+    notification.data.closeOnAction = event.action;
+    switch (event.action) {
+      case "watch_details":
+        console.log('Notification "watch_details" processing');
+        openDetailsLink(payload?.link ?? null);
+        event.notification.close();
+        break;
+      case "close":
+        console.log('Notification "close" processing');
+        event.notification.close();
+        break;
+      default:
+        console.log('Notification action default');
+        setTimeout(() => {
+          notification.close();
+        }, 5000);
     }
+    saveAnalytics(event);
   },
   false,
 );
+
+self.addEventListener("notificationclose", (event): void => {
+  //TODO add sync api request to store activity
+  console.log('notificationclose');
+  console.log(event);
+  if (!event.notification) {
+    return;
+  }
+  event.notification.data.closeOnAction = 'close_cross';
+  saveAnalytics(event);
+});
 
 onBackgroundMessage(messaging, async (payload) => {
   console.log('[EXTENSION firebase-messaging-sw.js] Received background message ', payload);
@@ -83,9 +141,6 @@ onBackgroundMessage(messaging, async (payload) => {
     return;
   }
 
-  const doneAt = payload?.data?.doneAt ?? '';
-  const requireInteraction = payload?.data?.requireInteraction ?? 'true';
-
   // Customize notification here
   const actions: NotificationAction[] = [
     {
@@ -98,24 +153,31 @@ onBackgroundMessage(messaging, async (payload) => {
     }
   ];
 
+  let doneAt = payload?.data?.doneAt ?? null;
+  if (doneAt) {
+    doneAt = (new DateW3c(doneAt)).toUserView();
+    title += ' ' + doneAt;
+  }
+
+  const requireInteraction = payload?.data?.requireInteraction ?? 'true';
+  const link = payload.data?.link ?? null;
   const options: NotificationOptions = {
     body: body,
     requireInteraction: requireInteraction === 'true',
     silent: true,
-    icon: payload?.data?.icon ?? 'assets/icons/logo.png',
     actions: actions,
+    data: {
+      link,
+      doneAt,
+    },
   };
 
-  if ('' !== doneAt) {
-    const time = new DateW3c(doneAt);
-    title += ' ' + time.toUserView();
+  const icon = payload?.data?.icon ?? payload?.data?.image ?? null;
+  if (icon) {
+    options['icon'] = icon;
   }
 
   await self.registration.showNotification(title, options);
-
-  chrome.notifications.getAll((notification) => {
-    console.log(notification);
-  });
 });
 
 const refreshFcmToken = async () => {
