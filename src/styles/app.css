@@ -1,0 +1,77 @@
+/* Fonts */
+
+@font-face {
+    font-family: 'greycliff-heavy';
+    src: url('./fonts/greycliff/GreycliffCF-Heavy.otf') format('opentype');
+    font-weight: 400;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'greycliff-heavyoblique';
+    src: url('./fonts/greycliff/GreycliffCF-HeavyOblique.otf') format('opentype');
+    font-weight: 400;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'greycliff-extrabold';
+    src: url('./fonts/greycliff/GreycliffCF-ExtraBold.otf') format('opentype');
+    font-weight: 400;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'greycliff-bold';
+    src: url('./fonts/greycliff/GreycliffCF-Bold.otf') format('opentype');
+    font-weight: 400;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'greycliff-demibold';
+    src: url('./fonts/greycliff/GreycliffCF-DemiBold.otf') format('opentype');
+    font-weight: 400;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'greycliff-medium';
+    src: url('./fonts/greycliff/GreycliffCF-Medium.otf') format('opentype');
+    font-weight: 400;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'greycliff-mediumoblique';
+    src: url('./fonts/greycliff/GreycliffCF-MediumOblique.otf') format('opentype');
+    font-weight: 400;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'greycliff-regular';
+    src: url('./fonts/greycliff/GreycliffCF-Regular.otf') format('opentype');
+    font-weight: 400;
+    font-style: normal;
+}
+
+body {
+    width: 400px;
+    min-height: 200px;
+    margin: 0;
+    font-family: greycliff-regular, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active{
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: inherit;
+    transition: background-color 5000s ease-in-out 0s;
+}

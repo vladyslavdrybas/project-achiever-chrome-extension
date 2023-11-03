@@ -1,4 +1,6 @@
+const path = require('path');
 const HtmlWebpackPlugin = require("html-webpack-plugin");
+
 module.exports = {
     webpack: {
         configure: (webpackConfig, { env, paths }) => {
@@ -32,4 +34,8 @@ module.exports = {
             };
         },
     },
+};
+
+module.exports.webpack['alias'] = {
+    '@': path.resolve(__dirname, 'src'),
 };
