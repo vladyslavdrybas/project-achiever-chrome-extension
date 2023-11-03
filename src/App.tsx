@@ -16,27 +16,16 @@ function App() {
     <ThemeProvider theme={themeLight}>
       <CssBaseline />
         <Box
+            className="flex flex-column-centered"
+            component="div"
             sx={{
-                display: "flex",
-                flexDirection: "column",
-                flexWrap: "nowrap",
-                justifyContent: "center",
-                alignItems: "center",
-                alignContent: "center",
+                p: 2,
                 background: themeLight.palette.secondary.gradientMain
             }}
         >
             <Box
+                className="flex flex-column-centered"
                 component="header"
-                sx={{
-                  display: "flex",
-                  flexDirection: "column",
-                  flexWrap: "nowrap",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  alignContent: "center",
-                  p: 2,
-                }}
             >
               <Avatar
                   className="avatar-drop-shadow"
@@ -50,16 +39,8 @@ function App() {
               />
             </Box>
             <Box
-              component="main"
-              sx={{
-                display: "flex",
-                flexDirection: "column",
-                flexWrap: "nowrap",
-                justifyContent: "center",
-                alignItems: "center",
-                alignContent: "center",
-                p: 2,
-              }}
+                className="flex flex-column-centered"
+                component="main"
             >
               <LoginForm></LoginForm>
             </Box>

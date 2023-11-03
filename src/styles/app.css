@@ -67,6 +67,18 @@ body {
     -moz-osx-font-smoothing: grayscale;
 }
 
+.flex {
+    display: flex;
+}
+
+.flex-column-centered {
+    flex-direction: column;
+    flex-wrap: nowrap;
+    justify-content: center;
+    align-items: center;
+    align-content: center;
+}
+
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus,
