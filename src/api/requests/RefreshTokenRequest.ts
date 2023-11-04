@@ -6,19 +6,21 @@ import {
 } from "../ApiRequest";
 import ProfileRequest from "./ProfileRequest";
 import {TLoginResponse} from "./LoginRequest";
-import {StorageKeys} from "@/types/StorageKeys";
 import {Routes} from "@/artifacts/Route";
+import LocalStorage from "@/util/LocalStorage";
 
 class RefreshTokenRequest {
     _host: string;
     _route: string;
     _response: TLoginResponse | null;
+    _storage: LocalStorage;
 
     constructor() {
         this._host = Routes.host;
         this._route = Routes.refreshAccessToken;
         this._route = this._host + this._route;
         this._response = null;
+        this._storage = new LocalStorage();
     }
 
     get response(): TLoginResponse|null
@@ -27,11 +29,11 @@ class RefreshTokenRequest {
     }
 
     send = async (): Promise<void> => {
-        const refreshToken = (await chrome.storage.local.get([StorageKeys.REFRESH_TOKEN]))[StorageKeys.REFRESH_TOKEN] ?? null;
+        const refreshToken = await this._storage.getRefreshToken();
 
         console.log(refreshToken);
         if (null === refreshToken) {
-           await chrome.storage.local.remove([StorageKeys.LOGGED_USER_ID, StorageKeys.ACCESS_TOKEN, StorageKeys.REFRESH_TOKEN]);
+           await this._storage.clean();
 
             throw new ApiRequestError(
                 {
@@ -55,21 +57,21 @@ class RefreshTokenRequest {
             await request.send();
             console.log(request.response);
 
-            request.accessToken();
+            await request.accessToken();
         } catch (e) {
             console.log(e);
             console.log(request.status);
             if (request.status === ApiRequestStatus.HTTP_UNAUTHORIZED) {
                 console.log('clean local storage');
-                await chrome.storage.local.remove([StorageKeys.LOGGED_USER_ID, StorageKeys.ACCESS_TOKEN, StorageKeys.REFRESH_TOKEN]);
+                await this._storage.clean();
             }
 
             throw e;
         }
 
-        request.accessToken();
+        await request.accessToken();
 
-        const userId = (await chrome.storage.local.get([StorageKeys.LOGGED_USER_ID]))[StorageKeys.LOGGED_USER_ID] ?? null;
+        const userId = await this._storage.getLoggedUserId();
 
         if (null === userId) {
             const getProfileRequest = new ProfileRequest();

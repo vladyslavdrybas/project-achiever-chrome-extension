@@ -22,31 +22,6 @@
 // const firebase = initializeApp(firebaseConfig);
 // const messaging = getMessaging(firebase);
 //
-// const logStorageData = async () => {
-//   const storedAccessToken = (await chrome.storage.local.get([StorageKeys.ACCESS_TOKEN]))[StorageKeys.ACCESS_TOKEN];
-//   const storedRefreshToken = (await chrome.storage.local.get([StorageKeys.REFRESH_TOKEN]))[StorageKeys.REFRESH_TOKEN];
-//   const storedUserId = (await chrome.storage.local.get([StorageKeys.LOGGED_USER_ID]))[StorageKeys.LOGGED_USER_ID];
-//   const storedFcmTokenExpireAt = (await chrome.storage.local.get([StorageKeys.FCM_TOKEN_EXPIRE_AT_UTC]))[StorageKeys.FCM_TOKEN_EXPIRE_AT_UTC];
-//
-//   console.log({
-//     storedAccessToken,
-//     storedRefreshToken,
-//     storedUserId,
-//     storedFcmTokenExpireAt
-//   });
-// }
-//
-// const cleanStorageData = async () => {
-//   await chrome.storage.local.remove([
-//     StorageKeys.LOGGED_USER_ID,
-//     StorageKeys.ACCESS_TOKEN,
-//     StorageKeys.REFRESH_TOKEN,
-//     StorageKeys.FCM_TOKEN_EXPIRE_AT_UTC,
-//   ]);
-//
-//   await logStorageData();
-// }
-//
 // const openDetailsLink = (link: string|null) => {
 //   if (link) {
 //     chrome.tabs.create({ url: link });
@@ -205,23 +180,6 @@
 //   }
 // }
 //
-// const sendLoginRequest = async (email: string, password: string) => {
-//   const apiRequest = new LoginRequest(email, password);
-//
-//   try {
-//     await apiRequest.send();
-//   } catch (e) {
-//     console.log(e);
-//     return 400;
-//   }
-//
-//   await logStorageData();
-//   await refreshFcmToken();
-//
-//   await chrome.action.setPopup({popup: './signout.html'});
-//
-//   return 200;
-// }
 //
 // const sendLogoutRequest = async () => {
 //   const apiRequest = new LogoutRequest();
@@ -239,20 +197,102 @@
 //   return 200;
 // }
 //
-// chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-//   if (request.message === 'authentication_email_password') {
-//     const email = request.payload.email;
-//     const password = request.payload.password;
-//     sendLoginRequest(email, password).then(r =>
-//       sendResponse({status: r})
-//     );
-//   } else if (request.message === 'authentication_signout') {
-//     sendLogoutRequest().then(r =>
-//       sendResponse({status: r})
-//     );
-//   }
-//
-//   return true;
-// });
+
+import browser from 'webextension-polyfill'
+import LoginRequest from "@/api/requests/LoginRequest";
+import LocalStorage from "@/util/LocalStorage";
+
+type Message = {
+    from: string;
+    to: string;
+    action: string;
+    payload: any;
+}
+
+const sendLoginRequest = async (email: string, password: string) => {
+    if (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i.test(email)) {
+        throw new Error('Invalid email');
+    }
+
+    if (password.length < 5) {
+        throw new Error('Password is less than 5. ');
+    }
+
+    try {
+        const apiRequest = new LoginRequest(email, password);
+        await apiRequest.send();
+        await (new LocalStorage()).log();
+        // await refreshFcmToken();
+    } catch (e: any) {
+        console.log(e);
+        return {
+            status: 400,
+            message: e.message,
+        };
+    }
+
+    return {
+        status: 200,
+        message: 'success',
+    };
+}
+
+// @ts-ignore
+browser.runtime.onMessage.addListener((message: Message, sender, sendResponse): any => {
+    console.log('on message listener');
+    console.log(message);
+
+    if (message.to === 'background' && message.action === 'authentication_email_password') {
+        console.log(message);
+        const email = message.payload.email;
+        const password = message.payload.password;
+
+        sendLoginRequest(email, password).then(
+            r =>
+            {
+                console.log([
+                    'login success request',
+                    r
+                ])
+                // @ts-ignore
+                sendResponse(r)
+
+                return r;
+            }
+        ).catch(
+            r => {
+                console.log([
+                    'login fail request',
+                    r
+                ])
+                // @ts-ignore
+                sendResponse({
+                    status: 400,
+                    message: r.message
+                })
+            }
+        );
+
+    } else if (message.to === 'background' && message.action === 'authentication_signout') {
+        console.log(message);
+        // sendLogoutRequest().then(r =>
+        //   sendResponse({status: r})
+        // );
+
+        // @ts-ignore
+        sendResponse({
+            status: 200,
+            message: "Response from background script authentication_signout",
+        });
+    } else {
+        // @ts-ignore
+        sendResponse({
+            status: 200,
+            message: "Undefined action",
+        });
+    }
+
+    return true;
+});
 
 export {}

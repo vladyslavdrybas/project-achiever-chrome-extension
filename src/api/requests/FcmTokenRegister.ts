@@ -1,6 +1,6 @@
 import {GetRequest} from "../ApiRequest";
 import {Routes} from "@/artifacts/Route";
-import {StorageKeys} from "@/types/StorageKeys";
+import LocalStorage from "@/util/LocalStorage";
 
 type TFcmTokenRegisterResponse = {
     deviceType: string;
@@ -14,6 +14,7 @@ class FcmTokenRegister {
     _host: string;
     _route: string;
     _response: TFcmTokenRegisterResponse | null;
+    _storage: LocalStorage;
 
     constructor(
         token: string,
@@ -23,6 +24,7 @@ class FcmTokenRegister {
         this._route = this._host + this._route;
         this._route = this._route.replace('{{token}}', token);
         this._response = null;
+        this._storage = new LocalStorage();
     }
 
     get response(): TFcmTokenRegisterResponse|null
@@ -37,9 +39,10 @@ class FcmTokenRegister {
 
         this._response = request.response;
 
-      const tokenExpireObj: any = {};
-      tokenExpireObj[StorageKeys.FCM_TOKEN_EXPIRE_AT_UTC] = this._response?.expireAt ?? null;
-      await chrome.storage.local.set(tokenExpireObj);
+        const expiredAt = this._response?.expireAt ?? null;
+        if (null !== expiredAt) {
+            await this._storage.setFcmTokenExpireAtUtc(expiredAt);
+        }
     }
 }
 

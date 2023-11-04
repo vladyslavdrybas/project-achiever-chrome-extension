@@ -1,6 +1,6 @@
 import {ApiRequestError, ApiRequestStatus, PostRequest} from "../ApiRequest";
-import {StorageKeys} from "@/types/StorageKeys";
 import {Routes} from "@/artifacts/Route";
+import LocalStorage from "@/util/LocalStorage";
 
 type TLogoutResponse = {
     message: string;
@@ -10,12 +10,14 @@ class LogoutRequest {
     _host: string;
     _route: string;
     _response: TLogoutResponse | null;
+    _storage: LocalStorage;
 
     constructor() {
         this._host = Routes.host;
         this._route = Routes.logout;
         this._route = this._host + this._route;
         this._response = null;
+        this._storage = new LocalStorage();
     }
 
     get response(): TLogoutResponse|null
@@ -24,11 +26,11 @@ class LogoutRequest {
     }
 
     send = async (): Promise<void> => {
-      const refreshToken = (await chrome.storage.local.get([StorageKeys.REFRESH_TOKEN]))[StorageKeys.REFRESH_TOKEN] ?? null;
+        const refreshToken = await this._storage.getRefreshToken();
 
-      console.log(refreshToken);
-      if (null === refreshToken) {
-        await chrome.storage.local.remove([StorageKeys.LOGGED_USER_ID, StorageKeys.ACCESS_TOKEN, StorageKeys.REFRESH_TOKEN]);
+        console.log(refreshToken);
+        if (null === refreshToken) {
+        await this._storage.clean();
 
         throw new ApiRequestError(
           {
@@ -37,24 +39,20 @@ class LogoutRequest {
             route: this._route,
           }
         )
-      }
+        }
 
-      const request = new PostRequest(
+        const request = new PostRequest(
         this._route,
         JSON.stringify({
           "refresh_token": refreshToken,
         })
-      );
+        );
 
-      await request.sendWithAuthorization();
-      await chrome.storage.local.remove([
-        StorageKeys.LOGGED_USER_ID,
-        StorageKeys.ACCESS_TOKEN,
-        StorageKeys.REFRESH_TOKEN,
-        StorageKeys.FCM_TOKEN_EXPIRE_AT_UTC,
-      ]);
+        await request.sendWithAuthorization();
+        await this._storage.clean();
 
-      this._response = request.response;
+
+        this._response = request.response;
     }
 }
 

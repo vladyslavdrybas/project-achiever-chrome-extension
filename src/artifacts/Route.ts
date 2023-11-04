@@ -11,7 +11,7 @@ type TRoutes = {
 }
 
 export const Routes: TRoutes = {
-  host: "https://1439-195-3-128-16.ngrok-free.app",
+  host: "https://c68b-195-3-128-16.ngrok-free.app",
   register: "/api/auth/register",
   login: "/api/auth/login",
   logout: "/api/auth/logout/web_ext",

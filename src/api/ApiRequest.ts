@@ -1,6 +1,6 @@
-import {StorageKeys} from "@/types/StorageKeys";
 import RefreshTokenRequest from "./requests/RefreshTokenRequest";
 import {jwt_decode} from "@/util/Jwt";
+import LocalStorage from "@/util/LocalStorage";
 
 enum ApiRequestMethods {
     Get = "GET",
@@ -20,6 +20,7 @@ interface IApiRequest {
     headers: Record<string, string>;
     body: string;
     response: any;
+    storage: LocalStorage;
     accessToken(): Promise<string>;
     refreshTokenIfExpired(): Promise<void>;
     send(): Promise<any>;
@@ -75,6 +76,7 @@ class ApiRequest {
     _status: number;
     _response: any;
     _method: ApiRequestMethods;
+    _storage: LocalStorage;
 
     constructor(
         route: string,
@@ -87,9 +89,15 @@ class ApiRequest {
         this._status = 404;
         this._headers = {};
         this._response = null;
+        this._storage = new LocalStorage();
         this.addHeader({key: "Content-Type", value: "application/json"});
         this.addHeader({key: "Access-Control-Allow-Origin", value: "*"});
         this.addHeader({key: "ngrok-skip-browser-warning", value: "69420"});
+    }
+
+    get storage(): LocalStorage
+    {
+        return this._storage;
     }
 
     get status(): number
@@ -156,14 +164,14 @@ class ApiRequest {
 
     refreshTokenIfExpired = async (): Promise<void> => {
         console.log(this.refreshTokenIfExpired.name);
-        const refreshToken = (await chrome.storage.local.get([StorageKeys.REFRESH_TOKEN]))[StorageKeys.REFRESH_TOKEN] ?? null;
+        const refreshToken = await this.storage.getRefreshToken() ?? null;
 
         console.log(refreshToken);
         if (null === refreshToken) {
             return;
         }
 
-        const accessToken = (await chrome.storage.local.get([StorageKeys.ACCESS_TOKEN]))[StorageKeys.ACCESS_TOKEN] ?? '';
+        const accessToken = await this.storage.getAccessToken() ?? '';
         const jwt = jwt_decode(accessToken);
 
         console.log(jwt);
@@ -258,7 +266,7 @@ class AccessTokenReader implements IRequestDecorator, IAccessTokenReader {
     constructor() {}
     decorate = (request: IApiRequest): void => {
         request.accessToken = async (): Promise<string> => {
-            const accessToken = (await chrome.storage.local.get([StorageKeys.ACCESS_TOKEN]))[StorageKeys.ACCESS_TOKEN] ?? null;
+            const accessToken = await request.storage.getAccessToken() ?? null;
             if (null === accessToken) {
                 throw new ApiRequestError(
                     {
@@ -301,15 +309,10 @@ class AccessTokenWriter implements IRequestDecorator, IAccessTokenWriter {
                 )
             }
 
-            const accessTokenObj: any = {};
-            accessTokenObj[StorageKeys.ACCESS_TOKEN] = response.token;
-            await chrome.storage.local.set(accessTokenObj);
+            await request.storage.setAccessToken(response.token);
+            await request.storage.setRefreshToken(response.refresh_token);
 
-            const refreshTokenObj: any = {};
-            refreshTokenObj[StorageKeys.REFRESH_TOKEN] = response.refresh_token;
-            await chrome.storage.local.set(refreshTokenObj);
-
-            const accessToken = (await chrome.storage.local.get([StorageKeys.ACCESS_TOKEN]))[StorageKeys.ACCESS_TOKEN] ?? null;
+            const accessToken = await request.storage.getAccessToken() ?? null;
             if (null === accessToken) {
                 throw new ApiRequestError(
                     {
