@@ -159,6 +159,7 @@ import LocalStorage from "@/util/LocalStorage";
 import Fcm from "@/util/Fcm";
 import FcmTokenRegister from "@/api/requests/FcmTokenRegister";
 import LogoutRequest from "@/api/requests/LogoutRequest";
+import DateW3c from "@/util/DateW3c";
 
 type Message = {
     from: string;
@@ -178,7 +179,9 @@ const ResponseSuccess: ResponseMessage = {
 }
 
 /* eslint-disable-next-line no-restricted-globals */
-const fcm = new Fcm(self);
+const serviceWorker = self;
+
+const fcm = new Fcm(serviceWorker);
 
 const refreshFcmToken = async () => {
     let token = await fcm.registerToken();
@@ -238,6 +241,68 @@ const sendLogoutRequest = async () => {
     return ResponseSuccess;
 }
 
+const showNotificationFromPayload = async (payload: any) => {
+  console.log('[EXTENSION firebase-messaging-sw.js] Received background message ', payload);
+  const storedUserId = await (new LocalStorage()).getLoggedUserId();
+
+  if (null === storedUserId
+    || null === (payload?.data?.userId ?? null)
+    || storedUserId !== payload?.data?.userId
+  ) {
+    console.log('EXTENSION got message for not logged in user.');
+
+    return;
+  }
+
+  let title = payload?.data?.title ?? null;
+  const body = payload?.data?.body ?? null;
+
+  if (null === title || null === body) {
+    return;
+  }
+
+  // Customize notification here
+  const actions: NotificationAction[] = [
+    {
+      action: 'watch_details',
+      title: 'Details',
+    },
+    {
+      action: 'close',
+      title: 'Close',
+    }
+  ];
+
+  let doneAt = payload?.data?.doneAt ?? null;
+  if (doneAt) {
+    doneAt = (new DateW3c(doneAt)).toUserView();
+    title += ' ' + doneAt;
+  }
+
+  const requireInteraction = payload?.data?.requireInteraction ?? 'true';
+  const link = payload.data?.link ?? null;
+  const options: NotificationOptions = {
+    body: body,
+    requireInteraction: requireInteraction === 'true',
+    silent: true,
+    actions: actions,
+    data: {
+      link,
+      doneAt,
+    },
+  };
+
+  const icon = payload?.data?.icon ?? payload?.data?.image ?? null;
+  if (icon) {
+    options['icon'] = icon;
+  }
+
+  console.log([
+      'show notification with options:',
+      options,
+  ])
+  await serviceWorker.registration.showNotification(title, options);
+}
 
 // @ts-ignore
 browser.runtime.onMessage.addListener((message: Message, sender, sendResponse): any => {
@@ -312,3 +377,26 @@ browser.runtime.onMessage.addListener((message: Message, sender, sendResponse): 
 
     return true;
 });
+
+browser.management.onEnabled.addListener(() => {
+    sendLogoutRequest().then(r => {console.log(r); return r;}).catch(e => console.log(e));
+});
+
+browser.management.onDisabled.addListener(() => {
+    sendLogoutRequest().then(r => {console.log(r); return r;}).catch(e => console.log(e));
+});
+
+browser.management.onUninstalled.addListener(() => {
+    sendLogoutRequest().then(r => {console.log(r); return r;}).catch(e => console.log(e));
+});
+
+serviceWorker.addEventListener(
+    "push",
+    (event) => {
+        let payload = event.data.json();
+        console.log(`Message on push notification`, payload);
+
+        showNotificationFromPayload(payload).catch(e => console.log(e.message));
+    },
+    false,
+);
