@@ -51,7 +51,6 @@ class LogoutRequest {
         await request.sendWithAuthorization();
         await this._storage.clean();
 
-
         this._response = request.response;
     }
 }

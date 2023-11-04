@@ -20,6 +20,13 @@ function App() {
         const hasRefreshToken = !!(await storage.getRefreshToken());
         const hasLoggedUserId = !!(await storage.getLoggedUserId());
 
+        console.log([
+            'is auth',
+            hasAccessToken && hasRefreshToken && hasLoggedUserId,
+            await storage.getAccessToken(),
+            await storage.getRefreshToken(),
+            await storage.getLoggedUserId()
+        ])
         return hasAccessToken && hasRefreshToken && hasLoggedUserId;
     }
     const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -69,10 +76,22 @@ function App() {
         console.log('handleLogoutSubmit');
         setIsLoading(true);
 
-        const storage = new LocalStorage();
-        await storage.log();
+        const response = await browser.runtime.sendMessage(
+            {
+                from: 'content',
+                to: 'background',
+                action: 'authentication_out',
+                payload: {}
+            }
+        )
 
-        setIsAuth(false);
+        if (response.status === 200) {
+            setIsAuth(false);
+            setBackgroundResponseMessage('');
+        } else {
+            setBackgroundResponseMessage(response.message ?? '');
+        }
+
         setIsLoading(false);
     }
 

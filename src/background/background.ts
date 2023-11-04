@@ -8,19 +8,6 @@
 // import DateW3c from "@/util/DateW3c";
 // import AnalyticsTrackNotificationRequest from "@/api/requests/AnalyticsTrackNotificationRequest";
 //
-// const VAPID_KEY = "BG9ZzgwoZHtOmt7g2VBIQJHASK9VEAup7q7IS2q0XRCM6L75_ahO2kFW8zPwBRjqfBPNzOnI1TwbWCcvZ8nGhxw";
-//
-// const firebaseConfig = {
-//   apiKey: "AIzaSyBAq4mLJ5BEop8-73fIO8raChnVoKvPo68",
-//   authDomain: "motivator-dcb76.firebaseapp.com",
-//   projectId: "motivator-dcb76",
-//   storageBucket: "motivator-dcb76.appspot.com",
-//   messagingSenderId: "672217224954",
-//   appId: "1:672217224954:web:34681a2f4a08f411fb1b43"
-// };
-//
-// const firebase = initializeApp(firebaseConfig);
-// const messaging = getMessaging(firebase);
 //
 // const openDetailsLink = (link: string|null) => {
 //   if (link) {
@@ -162,51 +149,50 @@
 //   await self.registration.showNotification(title, options);
 // });
 //
-// const refreshFcmToken = async () => {
-//   let token = await getToken(messaging, {
-//     vapidKey: VAPID_KEY,
-//     serviceWorkerRegistration: self.registration, // note: we use the sw of ourself to register with
-//   });
-//
-//   if (token) {
-//     console.log(`fcm device token received: ${token}`);
-//     token = btoa(token);
-//     console.log(`fcm device token encoded: ${token}`);
-//
-//     const request = new FcmTokenRegister(token);
-//     await request.send();
-//   } else {
-//     console.log(`fcm device token not received`);
-//   }
-// }
 //
 //
-// const sendLogoutRequest = async () => {
-//   const apiRequest = new LogoutRequest();
-//
-//   try {
-//     await apiRequest.send();
-//     await logStorageData();
-//   } catch (e) {
-//     console.log(e);
-//     await cleanStorageData();
-//   }
-//
-//   await chrome.action.setPopup({popup: './signin.html'});
-//
-//   return 200;
-// }
-//
+
 
 import browser from 'webextension-polyfill'
 import LoginRequest from "@/api/requests/LoginRequest";
 import LocalStorage from "@/util/LocalStorage";
+import Fcm from "@/util/Fcm";
+import FcmTokenRegister from "@/api/requests/FcmTokenRegister";
+import LogoutRequest from "@/api/requests/LogoutRequest";
 
 type Message = {
     from: string;
     to: string;
     action: string;
     payload: any;
+}
+
+type ResponseMessage = {
+    status: number;
+    message: string;
+}
+
+const ResponseSuccess: ResponseMessage = {
+    status: 200,
+    message: 'success',
+}
+
+/* eslint-disable-next-line no-restricted-globals */
+const fcm = new Fcm(self);
+
+const refreshFcmToken = async () => {
+    let token = await fcm.registerToken();
+
+    if (null === token) {
+        throw new Error('Cannot register fcm token. Try later.');
+    }
+
+    console.log(`fcm device token received: ${token}`);
+    token = btoa(token);
+    console.log(`fcm device token encoded: ${token}`);
+
+    const request = new FcmTokenRegister(token);
+    await request.send();
 }
 
 const sendLoginRequest = async (email: string, password: string) => {
@@ -221,8 +207,8 @@ const sendLoginRequest = async (email: string, password: string) => {
     try {
         const apiRequest = new LoginRequest(email, password);
         await apiRequest.send();
+        await refreshFcmToken();
         await (new LocalStorage()).log();
-        // await refreshFcmToken();
     } catch (e: any) {
         console.log(e);
         return {
@@ -231,11 +217,27 @@ const sendLoginRequest = async (email: string, password: string) => {
         };
     }
 
-    return {
-        status: 200,
-        message: 'success',
-    };
+    return ResponseSuccess;
 }
+
+const sendLogoutRequest = async () => {
+    const apiRequest = new LogoutRequest();
+
+    try {
+        await apiRequest.send();
+    } catch (e: any) {
+        console.log(e);
+        await (new LocalStorage()).log();
+
+        // return {
+        //     status: 400,
+        //     message: e.message,
+        // };
+    }
+
+    return ResponseSuccess;
+}
+
 
 // @ts-ignore
 browser.runtime.onMessage.addListener((message: Message, sender, sendResponse): any => {
@@ -272,18 +274,34 @@ browser.runtime.onMessage.addListener((message: Message, sender, sendResponse): 
                 })
             }
         );
-
-    } else if (message.to === 'background' && message.action === 'authentication_signout') {
+    } else if (message.to === 'background' && message.action === 'authentication_out') {
         console.log(message);
-        // sendLogoutRequest().then(r =>
-        //   sendResponse({status: r})
-        // );
 
-        // @ts-ignore
-        sendResponse({
-            status: 200,
-            message: "Response from background script authentication_signout",
-        });
+        sendLogoutRequest().then(
+            r =>
+            {
+                console.log([
+                    'logout success request',
+                    r
+                ])
+                // @ts-ignore
+                sendResponse(r)
+
+                return r;
+            }
+        ).catch(
+            r => {
+                console.log([
+                    'logout fail request',
+                    r
+                ])
+                // @ts-ignore
+                sendResponse({
+                    status: 400,
+                    message: r.message
+                })
+            }
+        );
     } else {
         // @ts-ignore
         sendResponse({
@@ -294,5 +312,3 @@ browser.runtime.onMessage.addListener((message: Message, sender, sendResponse): 
 
     return true;
 });
-
-export {}
