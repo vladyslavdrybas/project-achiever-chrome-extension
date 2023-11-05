@@ -1,9 +1,9 @@
 {
-  "name": "Motivator-React",
-  "version": "0.1.0",
+  "name": "Achiever Notifier",
+  "version": "0.1.1",
   "manifest_version": 3,
   "author": "Vladyslav Drybas (https://www.linkedin.com/in/vladyslavdrybas)",
-  "description": "Receives and Display notifications from Motivator API. User should schedule notifications on website.",
+  "description": "Your achievements reminder. Never forget your successes. Be better than yesterday. Share with others.",
   "icons" : {
     "16": "logo128.png",
     "48": "logo128.png",
@@ -11,7 +11,7 @@
     "256": "logo256.png"
   },
   "action": {
-    "default_title": "Motivator React",
+    "default_title": "Achiever Notifier",
     "default_popup": "index.html"
   },
   "permissions": [
