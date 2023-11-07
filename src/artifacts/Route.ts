@@ -11,13 +11,13 @@ type TRoutes = {
 }
 
 export const Routes: TRoutes = {
-  host: "https://c68b-195-3-128-16.ngrok-free.app",
-  register: "/api/auth/register",
-  login: "/api/auth/login",
-  logout: "/api/auth/logout/web_ext",
-  refreshAccessToken: "/api/auth/token/refresh",
-  profile: "/api/profile",
-  fcmTokenRegister: "/api/firebase/store/token/{{token}}/web_ext",
-  fcmTokenProlong: "/api/firebase/prolong/token/web_ext",
-  analyticsTrackNotification: "/api/analytics/track/notification",
+  host: "https://leogiftbox.com/api/v1",
+  register: "/auth/register",
+  login: "/auth/login",
+  logout: "/auth/logout/web_ext",
+  refreshAccessToken: "/auth/token/refresh",
+  profile: "/profile",
+  fcmTokenRegister: "/firebase/store/token/{{token}}/web_ext",
+  fcmTokenProlong: "/firebase/prolong/token/web_ext",
+  analyticsTrackNotification: "/analytics/track/notification",
 }
