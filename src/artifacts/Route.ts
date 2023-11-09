@@ -11,7 +11,7 @@ type TRoutes = {
 }
 
 export const Routes: TRoutes = {
-  host: "https://leogiftbox.com/api/v1",
+  host: "https://achievernotifier.com/api/v1",
   register: "/auth/register",
   login: "/auth/login",
   logout: "/auth/logout/web_ext",
