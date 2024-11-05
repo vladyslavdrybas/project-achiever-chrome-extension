@@ -1,4 +1,4 @@
-# Achiever Chrone Extension
+# Achiever Chrome Extension
 
 ## About
 Pet project to help user track his achievements. Social network like.
